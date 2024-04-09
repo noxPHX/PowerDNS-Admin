@@ -8,6 +8,7 @@ ARG BUILD_DEPENDENCIES="build-base \
     openldap-dev \
     python3-dev \
     xmlsec-dev \
+    freetype-dev libpng-dev jpeg-dev libjpeg-turbo-dev
     npm \
     yarn \
     cargo"
@@ -15,7 +16,8 @@ ARG BUILD_DEPENDENCIES="build-base \
 ENV LC_ALL=en_US.UTF-8 \
     LANG=en_US.UTF-8 \
     LANGUAGE=en_US.UTF-8 \
-    FLASK_APP=/build/powerdnsadmin/__init__.py
+    FLASK_APP=/build/powerdnsadmin/__init__.py \
+    CARGO_HTTP_CHECK_REVOKE=false
 
 # Get dependencies
 # py3-pip should not belong to BUILD_DEPENDENCIES. Otherwise, when we remove
@@ -37,7 +39,7 @@ RUN pip install --upgrade pip && \
 COPY . /build
 
 # Prepare assets
-RUN yarn install --pure-lockfile --production && \
+RUN yarn install --pure-lockfile --production --network-timeout 100000 && \
     yarn cache clean && \
     sed -i -r -e "s|'rcssmin',\s?'cssrewrite'|'rcssmin'|g" /build/powerdnsadmin/assets.py && \
     flask assets build
@@ -73,7 +75,7 @@ FROM alpine:3.17
 ENV FLASK_APP=/app/powerdnsadmin/__init__.py \
     USER=pda
 
-RUN apk add --no-cache mariadb-connector-c postgresql-client py3-gunicorn py3-pyldap py3-flask py3-psycopg2 xmlsec tzdata libcap && \
+RUN apk add --no-cache mariadb-connector-c postgresql-client py3-gunicorn py3-pyldap py3-flask py3-psycopg2 xmlsec tzdata libcap freetype-dev libpng-dev jpeg-dev libjpeg-turbo-dev && \
     addgroup -S ${USER} && \
     adduser -S -D -G ${USER} ${USER} && \
     mkdir /data && \
